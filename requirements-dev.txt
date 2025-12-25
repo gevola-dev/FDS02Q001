@@ -1,29 +1,9 @@
 # requirements-dev.txt - Data Visualization Project Prisons
-# Ambiente dedicato per analisi dataset Eurostat Prison Statistics
 
 pandas==2.2.3
 numpy==2.1.1
-matplotlib==3.9.2
-seaborn==0.13.2
-
-# Per visualizzazioni avanzate (opzionale)
 plotly==5.23.0
-plotnine==0.12.4
 kaleido==0.2.1
-#plotly-orca==1.3.1  # Backup engine
-
-# Per esportazione immagini ad alta qualità
-Pillow==10.4.0
-
-# Per DataWrapper/Flourish compatibilità (CSV puliti)
-openpyxl==3.1.5
-
-# Utilità sviluppo
 jupyter==1.0.0
 ipykernel==6.29.5
-ipython==8.27.0
-
-# Lint & formatting (opzionale)
-black==24.10.0
-isort==5.13.2
-flake8==7.1.1
+openpyxl==3.1.5
