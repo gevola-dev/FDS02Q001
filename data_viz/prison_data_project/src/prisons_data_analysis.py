@@ -168,7 +168,6 @@ def trend_nations(df: pd.DataFrame, countries_focus: list) -> pd.DataFrame:
         focus_trends = trend_nations(df, ["Iceland", "Malta", "Liechtenstein", "Cyprus"])
         focus_trends.to_csv('focus_countries_trends.csv', index=False)
     """
-    # countries_focus = ["Iceland", "Malta", "Liechtenstein", "Cyprus"]
     
     focus_trends = df[df["geo"].isin(countries_focus)][["geo", "YEAR", "OCC_ABS"]].copy()
     
