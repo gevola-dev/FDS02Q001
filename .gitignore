@@ -5,6 +5,5 @@
 /data-viz-env/
 
 # Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-/src/__pycache__/
-/src/.ipynb_checkpoints/
+/data_viz/prison_data_project/src/__pycache__/
+/data_viz/prison_data_project/src/.ipynb_checkpoints/
