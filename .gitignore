@@ -5,7 +5,7 @@
 /data_man/datasets/
 
 # Environments
-/data-viz-env/
+/data-env/
 
 # Jupyter Notebook checkpoints
 /data_viz/prison_data_project/src/__pycache__/
