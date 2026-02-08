@@ -6,7 +6,7 @@ from typing import List, Dict, Optional, Union
 
 SCHEMAS = {
     'stg_gfg_articles': '''
-        "id" INTEGER, jbjkbkjbjjkjb
+        "id" INTEGER,
         "ingested_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
         "article_id" TEXT,
         "title" TEXT,
@@ -14,6 +14,22 @@ SCHEMAS = {
         "last_updated" TEXT,
         "link" TEXT,
         "category" TEXT,
+        PRIMARY KEY("id" AUTOINCREMENT)
+    ''',
+    'stg_medium_articles': '''
+        id INTEGER,
+        ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        title TEXT,
+        title_detail TEXT,  -- JSON o serialized dict
+        summary TEXT,
+        summary_detail TEXT,
+        link TEXT,
+        id_rss TEXT,  -- entry['id']
+        published TEXT,
+        published_parsed TEXT,
+        updated TEXT,
+        tags TEXT,           -- JSON array of dicts
+        authors TEXT,        -- JSON array of dicts
         PRIMARY KEY("id" AUTOINCREMENT)
     '''
 }
@@ -104,8 +120,6 @@ def create_table(conn: sqlite3.Connection, table_name: str, schema: str) -> bool
     # Check if table already exists
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
     table_exists = cursor.fetchone() is not None
-
-    print(repr(full_sql))
     
     try:
         cursor.execute(full_sql)
@@ -115,8 +129,12 @@ def create_table(conn: sqlite3.Connection, table_name: str, schema: str) -> bool
             print(f"Table '{table_name}' already exists")
         else:
             print(f"Table '{table_name}' created successfully")
+    
+        df_cols = pd.read_sql_query(f"PRAGMA table_info({table_name})", conn)
+        print(df_cols[['name', 'type', 'pk']].to_string(index=False))
+
         return True
-        
+            
     except sqlite3.Error as e:
         print(f"Error creating table '{table_name}': {e}")
         conn.rollback()
@@ -215,7 +233,7 @@ def ingest_csv_to_db(csv_path: str, conn: sqlite3.Connection, table_name: str,
             df = transform_func(df)
         
         # Bulk insert (AUTOINCREMENT handles id)
-        df.to_sql(table_name, conn, if_exists='replace', index=False, method='multi')
+        insert_df_to_db(df, 'stg_gfg_articles', conn)
         
         print(f"Ingested {len(df)} rows into '{table_name}'")
         return True
@@ -225,39 +243,7 @@ def ingest_csv_to_db(csv_path: str, conn: sqlite3.Connection, table_name: str,
         return False
 
 
-
-
-
-
-
-
-
-def insert_articles(conn: sqlite3.Connection, articles: List[Dict[str, Union[str, float, int]]]) -> int:
-    """
-    Insert multiple articles (or ignore duplicates).
-
-    Args:
-        conn (sqlite3.Connection): Active database connection.
-        articles (List[Dict]): List of article dicts with keys: title, platform, pub_date, llm_score, claps, tags.
-
-    Returns:
-        int: Number of rows inserted.
-
-    Example:
-        articles = [{'title': 'Test', 'platform': 'Medium', ...}]
-        count = insert_articles(conn, articles)
-    """
-    cursor = conn.cursor()
-    cursor.executemany('''
-    INSERT OR IGNORE INTO articles (title, platform, pub_date, llm_score, claps, tags)
-    VALUES (?, ?, ?, ?, ?, ?)
-    ''', [(a.get('title'), a.get('platform'), a.get('pub_date'),
-           a.get('llm_score'), a.get('claps'), a.get('tags')) for a in articles])
-    conn.commit()
-    return cursor.rowcount
-
-
-def query_articles(conn: sqlite3.Connection, query: str, params: Optional[tuple] = None) -> pd.DataFrame:
+def query_to_df(conn: sqlite3.Connection, statement: str, params: Optional[tuple] = None) -> pd.DataFrame:
     """
     Execute custom SQL query and return Pandas DataFrame.
 
@@ -268,9 +254,50 @@ def query_articles(conn: sqlite3.Connection, query: str, params: Optional[tuple]
 
     Returns:
         pd.DataFrame: Query results.
-
-    Example:
-        df = query_articles(conn, "SELECT * FROM articles WHERE llm_score > ?", (8.0,))
     """
-    return pd.read_sql_query(query, conn, params=params)
+    return pd.read_sql_query(statement, conn, params=params)
 
+
+def insert_df_to_db(
+    df: pd.DataFrame,
+    table_name: str,
+    conn,
+    chunksize: int = 500,
+    if_exists: str = 'append'
+) -> None:
+    """Inserts a pandas DataFrame into SQLite database table with chunking.
+    Uses `df.to_sql()` with optimized parameters to avoid SQLite's "too many SQL variables"
+    error on large DataFrames. Supports safe append operations while preserving table schema.
+
+    Args:
+        df: Input DataFrame to insert into database.
+        table_name: Target table name in the database.
+        conn: SQLAlchemy connection or engine object.
+        chunksize: Number of rows per chunk (default: 500, safe for SQLite).
+        if_exists: What to do if table exists: {'fail', 'replace', 'append', 'delete_rows'}.
+            Default is 'append' to preserve schema.
+
+    Raises:
+        Exception: If insertion fails, falls back to single-row inserts.
+    """
+    try:
+        df.to_sql(
+            name=table_name,
+            con=conn,
+            if_exists=if_exists,
+            index=False,
+            method='multi',
+            chunksize=chunksize
+        )
+        print(f"Successfully inserted {len(df)} rows into '{table_name}'.")
+    except Exception as e:
+        print(f"Multi-insert failed for '{table_name}': {e}")
+        # Fallback: single-row inserts without method='multi'
+        df.to_sql(
+            name=table_name,
+            con=conn,
+            if_exists=if_exists,
+            index=False,
+            chunksize=chunksize
+        )
+        print(f"Fallback insert completed: {len(df)} rows into '{table_name}'.")

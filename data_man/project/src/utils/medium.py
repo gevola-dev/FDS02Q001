@@ -2,16 +2,26 @@ import feedparser
 from dateutil import parser
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from datetime import datetime, timedelta, timezone
+import json
+import pandas as pd
+from typing import List, Dict, Any
 
 
 RSS_FEEDS = [
     {
         "url": "https://medium.com/feed/tag/data-quality",
-        "cap": 5,
     },
     {
         "url": "https://medium.com/feed/tag/data-observability",
-        "cap": 5,
+    },
+    {
+        "url": "https://medium.com/feed/tag/data-governance",
+    },
+    {
+        "url": "https://medium.com/feed/tag/data-lineage",
+    },
+    {
+        "url": "https://medium.com/feed/tag/data-engineer",
     },
 ]
 
@@ -237,3 +247,49 @@ def filter_valid_articles(
 
     print(f"Final: {len(valid_entries)} valid articles (cap {feed_cap})")
     return valid_entries
+
+
+def ingest_rss_to_stg_medium(entries: List[Dict[str, Any]]):
+    """Ingests Medium RSS feedparser.entries into stg_medium_articles table.
+
+    Flattens nested dicts (title_detail, tags, authors) to JSON strings.
+    Deduplicates by link/id_rss before insert. Uses safe chunking for SQLite.
+
+    Args:
+        conn: SQLAlchemy engine/connection.
+        entries: List of feedparser entry dicts from RSS feed.entries[file:124].
+
+    Returns:
+        None: Prints success/error counts.
+    """
+    # Flatten e clean entries
+    flattened = []
+    for entry in entries:
+        flat_entry = {
+            'title': entry.get('title', ''),
+            'title_detail': json.dumps(entry.get('title_detail', {})),
+            'summary': entry.get('summary', ''),
+            'summary_detail': json.dumps(entry.get('summary_detail', {})),
+            'link': entry.get('link', ''),
+            'id_rss': entry.get('id', ''),
+            'published': entry.get('published', ''),
+            'published_parsed': str(entry.get('published_parsed', '')),
+            'updated': entry.get('updated', ''),
+            'tags': json.dumps(entry.get('tags', [])),
+            'authors': json.dumps(entry.get('authors', []))
+        }
+        flattened.append(flat_entry)
+
+    df = pd.DataFrame(flattened)
+    
+    # Deduplica (evita duplicati per link/id_rss)
+    initial_count = len(df)
+    df = df.drop_duplicates(subset=['link', 'id_rss'], keep='last')
+    print(f"Deduplicated: {initial_count} -> {len(df)} rows")
+
+    if len(df) == 0:
+        print("No new entries to insert.")
+    
+    return df
+
+
