@@ -3,11 +3,13 @@
 # data files
 /data_viz/datasets/
 /data_man/datasets/
+/data_man/project/data/
 
 # Environments
 /data-env/
 
 # Jupyter Notebook checkpoints
+/data_man/project/src/utils/__pycache__/
 /data_viz/prison_data_project/src/__pycache__/
 /data_viz/prison_data_project/src/.ipynb_checkpoints/
 /.ipynb_checkpoints

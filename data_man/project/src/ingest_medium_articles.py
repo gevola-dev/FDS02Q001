@@ -46,8 +46,6 @@ if __name__ == "__main__":
         # Extract skip prefixes, default to empty list if not provided
         skip_prefixes = feed.get("skip", [])
 
-        do_llm_analysis = feed.get("llm_analysis", False)
-
         print(f"\nFetching articles from RSS: {feed_url} (Cap: {feed_cap})")
         entries = media.parse_rss_feed(feed_url)
         valid_entries = media.filter_valid_articles(

@@ -6,108 +6,12 @@ from datetime import datetime, timedelta, timezone
 
 RSS_FEEDS = [
     {
-        "url": "https://www.liberioltreleillusioni.it/rss-feed?type=9818",
-        "cap": 3,
-        "topic_id": "ffbb657eb0c443f79523753547e16313",
-        "creator_id": "1864c90d52dd8016961be693bbb16798",
-        "publication_id": "2074c90d52dd80218e7de2de0807b9be",
-    },
-    {
         "url": "https://medium.com/feed/tag/data-quality",
         "cap": 5,
-        "topic_id": "6507c6fc473a4f2ea5558ef132f67d8f",
-        "creator_id": "1694c90d52dd80beb889e455f98daf18",
-        "publication_id": "2ad4c90d52dd80c09dc7e985e9420123",
-        "llm_analysis": True,
     },
     {
         "url": "https://medium.com/feed/tag/data-observability",
         "cap": 5,
-        "topic_id": "80b5507f579e4af5a60b16e9c83474c5",
-        "creator_id": "1694c90d52dd80beb889e455f98daf18",
-        "publication_id": "2ad4c90d52dd808c94f9f5a9e6239e27",
-        "llm_analysis": True,
-    },
-    {
-        "url": "https://medium.com/feed/data-reply-it-datatech",
-        "cap": 3,
-        "topic_id": "9fef5d736db54922a4fb4452aa87428e",
-        "creator_id": "1694c90d52dd80beb889e455f98daf18",
-        "publication_id": "2074c90d52dd807c8230e48b3f1e3ddf",
-    },
-    {
-        "url": "https://www.dedaloinvest.com/w-blog?format=feed&type=rss",
-        "cap": 1,
-        "topic_id": "efed055bed0744588052b3988d47bd7c",
-        "creator_id": "1874c90d52dd80b494bbf846a357920b",
-        "publication_id": "2064c90d52dd8069ae4ac69232db530b",
-    },
-    {
-        "url": "https://ofdollarsanddata.com/feed/",
-        "cap": 1,
-        "topic_id": "efed055bed0744588052b3988d47bd7c",
-        "creator_id": "1694c90d52dd8033b4c1c4b87be95d5c",
-        "publication_id": "2074c90d52dd803b900ee36c7cb0572b",
-    },
-    {
-        "url": "https://rss.app/feeds/HLHhW5lvHRORFWvW.xml",  # Foreign Affairs most read articles
-        "cap": 0,
-        "topic_id": "ffbb657eb0c443f79523753547e16313",
-        "creator_id": "2614c90d52dd801ba686c40503c88c7f",
-        "publication_id": "2ad4c90d52dd8095b7ccd0f1797effc6",
-    },
-    {
-        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCNJ1Ymd5yFuUPtn21xtRbbw",  # AI explaned
-        "cap": 1,
-        "topic_id": "9fef5d736db54922a4fb4452aa87428e",
-        "creator_id": "2064c90d52dd80fb8346e158dd064452",
-        "publication_id": "2064c90d52dd8026a0c1c6630d40a3a1",
-    },
-    {
-        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCNxDaEFXPIlvqFZgvvk-K_Q",  # astronauticast
-        "cap": 1,
-        "topic_id": "fff4c90d52dd809fa623f66a358df3ea",
-        "creator_id": "1694c90d52dd8037b5f6c2e09528d855",
-        "publication_id": "2064c90d52dd80169a26c17d15b6a876",
-        "skip": ["ISS Timelapse"],  # Skip entries starting with "ISS Timelapse"
-    },
-    {
-        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCrdEJmK5bgFte04-UF7o29Q",  # liberi oltre le illusioni
-        "cap": 3,
-        "topic_id": "ffbb657eb0c443f79523753547e16313",
-        "creator_id": "1864c90d52dd8016961be693bbb16798",
-        "publication_id": "2a64c90d52dd8085a7daf3524e0f863d",
-        "skip": ["C.F.A", "Daily Spot", "https://www.youtube.com/shorts/"],
-    },
-    {
-        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMOiTfbUXxUFqJJtCQGHrrA",  # michele boldrin
-        "cap": 3,
-        "topic_id": "ffbb657eb0c443f79523753547e16313",
-        "creator_id": "1694c90d52dd80ce9bf0ef7ceda94534",
-        "publication_id": "2064c90d52dd804399d5dfe5dde114b9",
-        "skip": ["https://www.youtube.com/shorts/"],
-    },
-    {
-        "url": "https://rss.app/feeds/bs4ixDFrPxAZPcOT.xml",  # The batch - deepLearning.AI
-        "cap": 0,
-        "topic_id": "9fef5d736db54922a4fb4452aa87428e",
-        "creator_id": "2064c90d52dd809cb578e7df55adc64c",
-        "publication_id": "2064c90d52dd8023af6de041dd1ba5e0",
-    },
-    {
-        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCsE_m2z1NrvF2ImeNWh84mw",  # ActiveSelfProtection
-        "cap": 3,
-        "topic_id": "2c24c90d52dd809fa08cd06b4e7484ba",
-        "creator_id": "2c24c90d52dd8036a75ed61f4a3af156",
-        "publication_id": "2064c90d52dd804399d5dfe5dde114b9",
-        "skip": ["https://www.youtube.com/shorts/"],
-    },
-    {
-        "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCCxvrGHKqKEEBCWM3oqii9w",  # Corto circuito
-        "cap": 1,
-        "topic_id": "1764c90d52dd800284bef2c30164c2a7",
-        "creator_id": "2cc4c90d52dd80978e43e365a1f85690",
-        "publication_id": "2cc4c90d52dd809a98cbfd1f2fc6708d",
     },
 ]
 
