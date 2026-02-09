@@ -6,16 +6,15 @@ from utils.sqlite_db import (
     transform_gfg,
     delete_database,
     query_to_df,
-    SCHEMAS,
-    create_table,
-    insert_df_to_db
 )
-from utils.medium import (
+from utils.rss import (
     RSS_FEEDS,
-    parse_rss_feed,
-    ingest_rss_to_stg_medium,
+    ingest_rss_to_db,
+    transform_medium,
 )
-import sys
+from utils.dq import dq_pandera, dq_profiling
+
+
 
 # C:\Users\g.evola\repo\UNI\FDS02Q001\.env
 # C:\Users\Work\Documents\GitHub\UNI\FDS02Q001\.env
@@ -27,39 +26,41 @@ load_dotenv(dotenv_path, override=True)
 
 if __name__ == "__main__":
 
+    # db setup
     _= delete_database('data_man/project/data/dg_articles.db')
-
     conn = create_database('data_man/project/data/dg_articles.db')
 
 
     # GeeksforGeeks
+    ingest_csv_to_db('data_man/project/data/GeeksforGeeks_articles.csv', conn, 'stg_gfg_articles', transform_gfg)
+    df = query_to_df(conn, 'SELECT * FROM stg_gfg_articles')
+    print(df.head())
 
-    #ingest_csv_to_db('data_man/project/data/GeeksforGeeks_articles.csv', conn, 'stg_gfg_articles', transform_gfg)
-    #df = query_to_df(conn, 'SELECT * FROM stg_gfg_articles')
-    #print(df.head())
 
+    # Medium - Iterate over all RSS feeds
+    for feed in RSS_FEEDS:
+        ingest_rss_to_db(feed, conn, 'stg_medium_articles', transform_medium)
+    df = query_to_df(conn, 'SELECT * FROM stg_medium_articles')
+    print(df.head())
 
-    # Medium
+    # DQ checks
+    df_gfg = pd.read_sql("SELECT * FROM stg_gfg_articles WHERE processed = false", conn)
+    if dq_pandera(df_gfg, "GFG", max_dupes=100):
+        print("✅ GFG DQ PASS!")
+        #staging_to_dim_articles(conn)  # Procedi!
+        
 
-    # Retrieve schema dynamically from SCHEMAS
-    schema = SCHEMAS.get('stg_medium_articles')
-    if not schema:
-        print("Schema not found for table stg_medium_articles")
-        sys.exit(1)
+    # GFG pipeline
+    all_clean, clean_gfg = dq_pipeline_general(
+        df_gfg, conn, "stg_gfg_articles", "article_id", SCHEMA_GFG_ARTICLES
+    )
 
-    # Ensure table exists
-    if create_table(conn, 'stg_medium_articles', schema):
+    # Medium pipeline  
+    all_clean_medium, clean_medium = dq_pipeline_general(
+        df_medium, conn, "stg_medium_articles", "id_rss", SCHEMA_MEDIUM_ARTICLES
+    )
 
-        # Iterate over all RSS feeds
-        for feed in RSS_FEEDS:
-
-            # Extract parameters for Notion
-            feed_url = feed["url"]
-
-            feed = parse_rss_feed(feed_url)
-            df = ingest_rss_to_stg_medium(feed)
-
-            insert_df_to_db(df, 'stg_medium_articles', conn)
-            
-        df_query = query_to_df(conn, 'SELECT count(1) FROM stg_medium_articles')
-        print(df_query.head(100))
+    # Load solo dati puliti (usa insert_df_to_db internamente)
+    pd.concat([clean_gfg, clean_medium]).to_sql(
+        'dim_articles_temp', conn, if_exists='replace', index=False
+    )

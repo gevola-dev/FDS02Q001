@@ -1,24 +1,26 @@
 import sqlite3
 import os
 import pandas as pd
-from typing import List, Dict, Optional, Union
+from typing import Optional
 
 
 SCHEMAS = {
     'stg_gfg_articles': '''
-        "id" INTEGER,
-        "ingested_at" DATETIME DEFAULT CURRENT_TIMESTAMP,
-        "article_id" TEXT,
-        "title" TEXT,
-        "author_id" TEXT,
-        "last_updated" TEXT,
-        "link" TEXT,
-        "category" TEXT,
+        id INTEGER,
+        ingested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        processed BOOLEAN DEFAULT false,
+        article_id TEXT,
+        title TEXT,
+        author_id TEXT,
+        last_updated TEXT,
+        link TEXT,
+        category TEXT,
         PRIMARY KEY("id" AUTOINCREMENT)
     ''',
     'stg_medium_articles': '''
         id INTEGER,
         ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        processed BOOLEAN DEFAULT false,
         title TEXT,
         title_detail TEXT,  -- JSON o serialized dict
         summary TEXT,
@@ -30,6 +32,43 @@ SCHEMAS = {
         updated TEXT,
         tags TEXT,           -- JSON array of dicts
         authors TEXT,        -- JSON array of dicts
+        PRIMARY KEY("id" AUTOINCREMENT)
+    ''',
+    'dim_articles': '''
+        id INTEGER,
+        article_id TEXT UNIQUE NOT NULL,     -- GFG: article_id, Medium: id_rss (senza [])
+        source_platform TEXT NOT NULL CHECK(source_platform IN ('GFG', 'Medium')),
+        title TEXT NOT NULL,
+        author TEXT,
+        pub_date DATE,
+        link TEXT,
+        category TEXT,                       -- GFG: category, Medium: tags[0] o NULL
+        is_valid BOOLEAN DEFAULT 1,
+        quality_score INTEGER CHECK(quality_score BETWEEN 0 AND 10),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP.
+        PRIMARY KEY("id" AUTOINCREMENT)
+    ''',
+    'dq_outcome': '''
+        id INTEGER,
+        table_name TEXT NOT NULL,
+        run_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        total_rows INTEGER,
+        null_titles INTEGER,
+        duplicate_ids INTEGER,
+        validation_passed BOOLEAN,
+        validation_errors TEXT),
+        PRIMARY KEY("id" AUTOINCREMENT)
+    ''',
+    'dq_quarantine': '''
+        id INTEGER,
+        run_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        source_table TEXT NOT NULL,           -- stg_gfg_articles, stg_medium_articles
+        pk_column_name TEXT NOT NULL,         -- 'article_id', 'id_rss'
+        pk_value TEXT NOT NULL,               -- valore PK del record sporco
+        total_columns INTEGER NOT NULL,       -- numero colonne record
+        validation_error TEXT,                -- errore Pandera dettagliato
+        quarantine_batch_id TEXT DEFAULT (hex(randomblob(8)))  -- batch ID
         PRIMARY KEY("id" AUTOINCREMENT)
     '''
 }
@@ -129,9 +168,8 @@ def create_table(conn: sqlite3.Connection, table_name: str, schema: str) -> bool
             print(f"Table '{table_name}' already exists")
         else:
             print(f"Table '{table_name}' created successfully")
-    
-        df_cols = pd.read_sql_query(f"PRAGMA table_info({table_name})", conn)
-        print(df_cols[['name', 'type', 'pk']].to_string(index=False))
+            df_cols = pd.read_sql_query(f"PRAGMA table_info({table_name})", conn)
+            print(df_cols[['name', 'type', 'pk']].to_string(index=False))
 
         return True
             
@@ -301,3 +339,4 @@ def insert_df_to_db(
             chunksize=chunksize
         )
         print(f"Fallback insert completed: {len(df)} rows into '{table_name}'.")
+
