@@ -12,8 +12,7 @@ from utils.rss import (
     ingest_rss_to_db,
     transform_medium,
 )
-from utils.dq import dq_pandera, dq_profiling
-
+from utils.dq import dq_pandera, extract_failed_records_general
 
 
 # C:\Users\g.evola\repo\UNI\FDS02Q001\.env
@@ -43,24 +42,26 @@ if __name__ == "__main__":
     df = query_to_df(conn, 'SELECT * FROM stg_medium_articles')
     print(df.head())
 
-    # DQ checks
+    # DQ checks GeeksforGeeks
     df_gfg = pd.read_sql("SELECT * FROM stg_gfg_articles WHERE processed = false", conn)
-    if dq_pandera(df_gfg, "GFG", max_dupes=100):
-        print("✅ GFG DQ PASS!")
-        #staging_to_dim_articles(conn)  # Procedi!
-        
+    errors = dq_pandera(df_gfg, "stg_gfg_articles")
 
-    # GFG pipeline
-    all_clean, clean_gfg = dq_pipeline_general(
-        df_gfg, conn, "stg_gfg_articles", "article_id", SCHEMA_GFG_ARTICLES
-    )
+    if errors is not None:
+        print("\n=== Error Analysis ===")
+        print(f"Total validation errors: {len(errors.failure_cases)}")
+        print(f"Unique failed records: {errors.failure_cases['index'].dropna().nunique()}")
+        print("\nTop failed columns:")
+        print(errors.failure_cases['column'].value_counts())
+        print("\nTop failed checks:")
+        print(errors.failure_cases['check'].value_counts())
+        print("\nSample failure cases:")
+        print(errors.failure_cases[['column', 'check', 'failure_case']].head(20))
 
-    # Medium pipeline  
-    all_clean_medium, clean_medium = dq_pipeline_general(
-        df_medium, conn, "stg_medium_articles", "id_rss", SCHEMA_MEDIUM_ARTICLES
+    clean_df, quarantined_count = extract_failed_records_general(
+        errors, df_gfg, conn, "stg_gfg_articles", "id"
     )
+    df = query_to_df(conn, 'SELECT * FROM dq_quarantine')
+    print(df.head())
 
-    # Load solo dati puliti (usa insert_df_to_db internamente)
-    pd.concat([clean_gfg, clean_medium]).to_sql(
-        'dim_articles_temp', conn, if_exists='replace', index=False
-    )
+    # 3. Usa solo dati puliti
+    #staging_to_dim_articles(clean_df, conn)

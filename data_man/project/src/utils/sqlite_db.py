@@ -68,7 +68,6 @@ SCHEMAS = {
         pk_value TEXT NOT NULL,               -- valore PK del record sporco
         total_columns INTEGER NOT NULL,       -- numero colonne record
         validation_error TEXT,                -- errore Pandera dettagliato
-        quarantine_batch_id TEXT DEFAULT (hex(randomblob(8)))  -- batch ID
         PRIMARY KEY("id" AUTOINCREMENT)
     '''
 }
@@ -168,8 +167,10 @@ def create_table(conn: sqlite3.Connection, table_name: str, schema: str) -> bool
             print(f"Table '{table_name}' already exists")
         else:
             print(f"Table '{table_name}' created successfully")
+            print("\n")
             df_cols = pd.read_sql_query(f"PRAGMA table_info({table_name})", conn)
             print(df_cols[['name', 'type', 'pk']].to_string(index=False))
+            print("\n")
 
         return True
             
