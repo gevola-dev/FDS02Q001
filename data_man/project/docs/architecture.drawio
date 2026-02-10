@@ -33,13 +33,13 @@
         <mxCell id="1L-mi6SGM_5uMQQAVupn-1" edge="1" parent="1" source="x2xwI6-zPPOJp15Rcx6N-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="x2xwI6-zPPOJp15Rcx6N-19">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="x2xwI6-zPPOJp15Rcx6N-9" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff2cc;strokeColor=#d6b656;" value="SQL" vertex="1">
+        <mxCell id="x2xwI6-zPPOJp15Rcx6N-9" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d5e8d4;strokeColor=#82b366;" value="SQL" vertex="1">
           <mxGeometry height="80" width="60" x="880" y="300" as="geometry" />
         </mxCell>
         <mxCell id="x2xwI6-zPPOJp15Rcx6N-21" edge="1" parent="1" source="x2xwI6-zPPOJp15Rcx6N-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="x2xwI6-zPPOJp15Rcx6N-9">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="x2xwI6-zPPOJp15Rcx6N-19" parent="1" style="shape=card;whiteSpace=wrap;html=1;" value="DQ by SQL" vertex="1">
+        <mxCell id="x2xwI6-zPPOJp15Rcx6N-19" parent="1" style="shape=card;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="DQ by SQL" vertex="1">
           <mxGeometry height="80" width="60" x="1010" y="300" as="geometry" />
         </mxCell>
         <mxCell id="toaxM6jo8n5Y0vZpwy2S-1" edge="1" parent="1" source="x2xwI6-zPPOJp15Rcx6N-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0;exitDx=45;exitDy=0;exitPerimeter=0;" target="x2xwI6-zPPOJp15Rcx6N-4">

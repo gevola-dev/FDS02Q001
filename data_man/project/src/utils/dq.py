@@ -6,7 +6,6 @@ from utils.sqlite_db import SCHEMAS, create_table, insert_df_to_db
 
 
 # Aggiungere check per deduplica PK
-# Creare file per gestione DQ per singola tabella
 SCHEMA_GFG_ARTICLES = pa.DataFrameSchema({
     "article_id": pa.Column(
         str, 
@@ -59,6 +58,109 @@ SCHEMA_GFG_ARTICLES = pa.DataFrameSchema({
 }, strict=False)
 
 
+SCHEMA_MEDIUM_ARTICLES = pa.DataFrameSchema({
+    "id_rss": pa.Column(
+        str, 
+        required=True,
+        checks=[
+            pa.Check(lambda s: s.str.len() > 0, error="id_rss cannot be empty")
+        ]
+    ),
+    "title": pa.Column(
+        str, 
+        required=True,
+        checks=[
+            pa.Check(lambda s: s.str.len() >= 3, error="title too short"),
+            pa.Check(lambda s: s.str.len() <= 500, error="title too long")
+        ]
+    ),
+    "title_detail": pa.Column(
+        str, 
+        nullable=True,
+        checks=[
+            pa.Check(
+                lambda s: s.isna() | s.str.startswith('{') | s.str.startswith('['),
+                error="title_detail must be valid JSON format"
+            )
+        ]
+    ),
+    "summary": pa.Column(
+        str, 
+        nullable=True,
+        checks=[
+            pa.Check(lambda s: s.str.len() <= 5000, error="summary too long")
+        ]
+    ),
+    "summary_detail": pa.Column(
+        str, 
+        nullable=True,
+        checks=[
+            pa.Check(
+                lambda s: s.isna() | s.str.startswith('{') | s.str.startswith('['),
+                error="summary_detail must be valid JSON format"
+            )
+        ]
+    ),
+    "link": pa.Column(
+        str, 
+        nullable=True,
+        checks=[
+            pa.Check.str_contains(
+                r"https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+                error="missing valid URL"
+            )
+        ]
+    ),
+    "published": pa.Column(
+        str, 
+        nullable=True,
+        checks=[
+            pa.Check.str_matches(
+                r"^\d{4}-\d{2}-\d{2}$",
+                error="published must be in format YYYY-MM-DD"
+            )
+        ]
+    ),
+    "published_parsed": pa.Column(
+        str, 
+        nullable=True,
+        checks=[
+            pa.Check(lambda s: s.str.len() <= 200, error="published_parsed too long")
+        ]
+    ),
+    "updated": pa.Column(
+        str, 
+        nullable=True,
+        checks=[
+            pa.Check.str_matches(
+                r"^\d{4}-\d{2}-\d{2}$",
+                error="updated must be in format YYYY-MM-DD"
+            )
+        ]
+    ),
+    "tags": pa.Column(
+        str, 
+        nullable=True,
+        checks=[
+            pa.Check(
+                lambda s: s.isna() | s.str.startswith('['),
+                error="tags must be valid JSON array"
+            )
+        ]
+    ),
+    "authors": pa.Column(
+        str, 
+        nullable=True,
+        checks=[
+            pa.Check(
+                lambda s: s.isna() | s.str.startswith('['),
+                error="authors must be valid JSON array"
+            )
+        ]
+    )
+}, strict=False)
+
+
 def dq_pandera(df: pd.DataFrame, table_name: str) -> Optional[pa.errors.SchemaErrors]:
     """
     Perform comprehensive data quality validation using Pandera schema.
@@ -76,7 +178,12 @@ def dq_pandera(df: pd.DataFrame, table_name: str) -> Optional[pa.errors.SchemaEr
     """    
     try:
         # Use lazy validation to collect all errors in a single pass
-        SCHEMA_GFG_ARTICLES.validate(df, lazy=True)
+        if table_name == 'stg_medium_articles':
+            SCHEMA_MEDIUM_ARTICLES.validate(df, lazy=True)
+        elif table_name == 'stg_gfg_articles':
+            SCHEMA_GFG_ARTICLES.validate(df, lazy=True)
+        else:
+            raise ValueError (f"No schema configuration for table: {table_name}")
         print(f"PASS: Schema validation {table_name}")
         return None
         
@@ -185,9 +292,14 @@ def extract_failed_records_general(errors: Optional[pa.errors.SchemaErrors],
     
     # Handle case where all errors are DataFrame-level (no specific row indices)
     if len(failed_indices) == 0:
-        print("All errors are DataFrame-level (no specific row failures)")
-        print(f"Error summary: {errors.failure_cases['check'].value_counts().to_dict()}")
-        raise ValueError
+        error_types = errors.failure_cases['check'].unique()
+        print("  CRITICAL: DataFrame-level validation errors detected")
+        print(f"  Error types: {error_types.tolist()}")
+        print(f"  Failed checks: {errors.failure_cases[['column', 'check', 'failure_case']].to_dict('records')}")
+        raise ValueError(
+            f"Critical schema validation failure for {table_name}. "
+            f"DataFrame-level errors: {error_types.tolist()}. "
+        )
     
     print(f"Found {len(failed_indices)} unique failed records (from {len(errors.failure_cases)} total validation errors)")
     

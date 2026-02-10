@@ -7,12 +7,9 @@ from utils.sqlite_db import (
     delete_database,
     query_to_df,
 )
-from utils.rss import (
-    RSS_FEEDS,
-    ingest_rss_to_db,
-    transform_medium,
-)
+from utils.rss import RSS_FEEDS, ingest_rss_to_db, transform_medium
 from utils.dq import dq_pandera, extract_failed_records_general
+from utils.dimensions import staging_to_dim_articles_gfg, staging_to_dim_articles_medium
 
 
 # C:\Users\g.evola\repo\UNI\FDS02Q001\.env
@@ -21,9 +18,10 @@ dotenv_path = r"C:\Users\Work\Documents\GitHub\UNI\FDS02Q001\.env"
 load_dotenv(dotenv_path, override=True)
 
 
-# MAIN SCRIPT
-
-if __name__ == "__main__":
+def main() -> None:
+    """
+    Entry point for the project.
+    """
 
     # db setup
     _= delete_database('data_man/project/data/dg_articles.db')
@@ -42,26 +40,39 @@ if __name__ == "__main__":
     df = query_to_df(conn, 'SELECT * FROM stg_medium_articles')
     print(df.head())
 
+
     # DQ checks GeeksforGeeks
     df_gfg = pd.read_sql("SELECT * FROM stg_gfg_articles WHERE processed = false", conn)
-    errors = dq_pandera(df_gfg, "stg_gfg_articles")
+    if not df_gfg.empty:
+        errors = dq_pandera(df_gfg, "stg_gfg_articles")
+        clean_df, quarantined_count = extract_failed_records_general(errors, df_gfg, conn, "stg_gfg_articles", "id")
+        if staging_to_dim_articles_gfg(clean_df, conn):
+            print(f"GFG data loaded, {quarantined_count} quarantined")
+        else:
+            print(f"GFG data didnt load, {quarantined_count} quarantined")
+    else:
+        print("No unprocessed GFG records found")
 
-    if errors is not None:
-        print("\n=== Error Analysis ===")
-        print(f"Total validation errors: {len(errors.failure_cases)}")
-        print(f"Unique failed records: {errors.failure_cases['index'].dropna().nunique()}")
-        print("\nTop failed columns:")
-        print(errors.failure_cases['column'].value_counts())
-        print("\nTop failed checks:")
-        print(errors.failure_cases['check'].value_counts())
-        print("\nSample failure cases:")
-        print(errors.failure_cases[['column', 'check', 'failure_case']].head(20))
 
-    clean_df, quarantined_count = extract_failed_records_general(
-        errors, df_gfg, conn, "stg_gfg_articles", "id"
-    )
+    # DQ checks Medium
+    df_medium = pd.read_sql("SELECT * FROM stg_medium_articles WHERE processed = false", conn)
+    if not df_medium.empty:
+        errors = dq_pandera(df_medium, "stg_medium_articles")
+        clean_df, quarantined_count = extract_failed_records_general(errors, df_medium, conn, "stg_medium_articles", "id")
+        if staging_to_dim_articles_medium(clean_df, conn):
+            print(f"Medium data loaded, {quarantined_count} quarantined")
+        else:
+            print(f"Medium data didnt load, {quarantined_count} quarantined")
+    else:
+        print("No unprocessed Medium records found")
+
+
+    # Monitoring
     df = query_to_df(conn, 'SELECT * FROM dq_quarantine')
     print(df.head())
+    df = query_to_df(conn, 'SELECT * FROM dim_articles')
+    print(df.head())
 
-    # 3. Usa solo dati puliti
-    #staging_to_dim_articles(clean_df, conn)
+
+if __name__ == "__main__":
+    main()

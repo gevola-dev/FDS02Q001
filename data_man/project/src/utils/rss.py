@@ -48,16 +48,18 @@ def get_feed_df(rss_url: str) -> pd.DataFrame:
 
 
 def transform_medium(df: pd.DataFrame) -> pd.DataFrame:
-    """Transforms Medium RSS DataFrame for staging table.
+    """
+    Transform Medium RSS DataFrame for staging table.
 
     Flattens nested dicts (title_detail, tags, authors) to JSON strings using vectorized apply.
-    Deduplicates by link/id_rss. Handles missing values safely with fillna.
+    Normalizes date fields to YYYY-MM-DD format. Deduplicates by link/id_rss. 
+    Handles missing values safely with fillna.
 
     Args:
         df: Input DataFrame from parse_rss_feed (feed.entries as rows).
 
     Returns:
-        pd.DataFrame: Cleaned DataFrame ready for insert (deduplicated, flattened).
+        Cleaned DataFrame ready for insert (deduplicated, flattened, dates normalized).
     """
     if df.empty:
         print("Input DataFrame is empty.")
@@ -76,9 +78,18 @@ def transform_medium(df: pd.DataFrame) -> pd.DataFrame:
             lambda x: json.dumps(x) if isinstance(x, (dict, list)) else json.dumps({})
         )
 
+    # Normalize date columns to YYYY-MM-DD format
+    date_cols = ['published', 'updated']
+    for col in date_cols:
+        if col in flat_df.columns:
+            # Parse various date formats and convert to YYYY-MM-DD
+            # errors='coerce' converts invalid dates to NaT (then to empty string)
+            flat_df[col] = pd.to_datetime(flat_df[col], errors='coerce').dt.strftime('%Y-%m-%d')
+            # Replace NaT (becomes 'NaT' string after strftime) with empty string
+            flat_df[col] = flat_df[col].replace('NaT', '')
+
     # Safe string cleaning for scalar fields
-    scalar_cols = ['title', 'summary', 'link', 'id_rss', 'published', 
-                   'published_parsed', 'updated']
+    scalar_cols = ['title', 'summary', 'link', 'id_rss', 'published_parsed']
     for col in scalar_cols:
         flat_df[col] = flat_df[col].fillna('').astype(str)
 

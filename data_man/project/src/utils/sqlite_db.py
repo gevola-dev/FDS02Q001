@@ -36,28 +36,16 @@ SCHEMAS = {
     ''',
     'dim_articles': '''
         id INTEGER,
-        article_id TEXT UNIQUE NOT NULL,     -- GFG: article_id, Medium: id_rss (senza [])
+        article_id TEXT UNIQUE NOT NULL,
         source_platform TEXT NOT NULL CHECK(source_platform IN ('GFG', 'Medium')),
         title TEXT NOT NULL,
         author TEXT,
         pub_date DATE,
         link TEXT,
-        category TEXT,                       -- GFG: category, Medium: tags[0] o NULL
+        category TEXT,
         is_valid BOOLEAN DEFAULT 1,
-        quality_score INTEGER CHECK(quality_score BETWEEN 0 AND 10),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP.
-        PRIMARY KEY("id" AUTOINCREMENT)
-    ''',
-    'dq_outcome': '''
-        id INTEGER,
-        table_name TEXT NOT NULL,
-        run_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        total_rows INTEGER,
-        null_titles INTEGER,
-        duplicate_ids INTEGER,
-        validation_passed BOOLEAN,
-        validation_errors TEXT),
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY("id" AUTOINCREMENT)
     ''',
     'dq_quarantine': '''
