@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 import pandas as pd
 from utils.sqlite_db import (
     create_database,
@@ -12,24 +11,18 @@ from utils.dq import dq_pandera, extract_failed_records_general
 from utils.dimensions import staging_to_dim_articles_gfg, staging_to_dim_articles_medium
 
 
-# C:\Users\g.evola\repo\UNI\FDS02Q001\.env
-# C:\Users\Work\Documents\GitHub\UNI\FDS02Q001\.env
-dotenv_path = r"C:\Users\Work\Documents\GitHub\UNI\FDS02Q001\.env"
-load_dotenv(dotenv_path, override=True)
-
-
 def main() -> None:
     """
     Entry point for the project.
     """
 
     # db setup
-    _= delete_database('data_man/project/data/dg_articles.db')
-    conn = create_database('data_man/project/data/dg_articles.db')
+    _= delete_database('data/dg_articles.db')
+    conn = create_database('data/dg_articles.db')
 
 
     # GeeksforGeeks
-    ingest_csv_to_db('data_man/project/data/GeeksforGeeks_articles.csv', conn, 'stg_gfg_articles', transform_gfg)
+    ingest_csv_to_db('data/GeeksforGeeks_articles.csv', conn, 'stg_gfg_articles', transform_gfg)
     df = query_to_df(conn, 'SELECT * FROM stg_gfg_articles')
     print(df.head())
 

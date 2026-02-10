@@ -5,7 +5,6 @@ from typing import Tuple, Optional
 from utils.sqlite_db import SCHEMAS, create_table, insert_df_to_db
 
 
-# Aggiungere check per deduplica PK
 SCHEMA_GFG_ARTICLES = pa.DataFrameSchema({
     "article_id": pa.Column(
         str, 
